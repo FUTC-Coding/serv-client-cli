@@ -17,8 +17,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"os"
 	"serv-client-cli/helper"
+	"strconv"
 )
 
 // hostCmd represents the host command
@@ -35,7 +38,34 @@ to quickly create a Cobra application.`,
 		fmt.Println("hostname: " + args[0])
 		helper.StatsFromHostname(args[0])
 		fmt.Println(helper.CpuUser)
+		displayStats()
 	},
+}
+
+func FloatToString(input_num float64) string {
+	// to convert a float number to a string
+	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
+func displayStats() {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"CpuUser","CpuSystem", "CpuIdle", "MemTotal", "MemUsed", "MemCached", "MemFree", "RxBytes", "TxBytes", "Uptime", "Time"})
+	table.SetBorder(false)
+	//append a row with the data from the last call of StatsFromHostname()
+	table.Append([]string{
+		FloatToString(helper.CpuUser),
+		FloatToString(helper.CpuSystem),
+		FloatToString(helper.CpuIdle),
+		strconv.Itoa(helper.MemTotal),
+		strconv.Itoa(helper.MemUsed),
+		strconv.Itoa(helper.MemCached),
+		strconv.Itoa(helper.MemFree),
+		strconv.Itoa(helper.RxBytes),
+		strconv.Itoa(helper.TxBytes),
+		helper.Uptime,
+		helper.Time})
+
+	table.Render() //output the table
 }
 
 func init() {
