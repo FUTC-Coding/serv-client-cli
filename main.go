@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "serv/cmd"
+import "serv-client-cli/cmd"
 
 func main() {
   cmd.Execute()

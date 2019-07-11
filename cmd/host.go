@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
+	"serv-client-cli/helper"
 )
 
 // hostCmd represents the host command
@@ -32,7 +32,9 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("host called")
+		fmt.Println("hostname: " + args[0])
+		helper.StatsFromHostname(args[0])
+		fmt.Println(helper.CpuUser)
 	},
 }
 
