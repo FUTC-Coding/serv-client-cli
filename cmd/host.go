@@ -17,9 +17,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/marcusolsson/tui-go"
 	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/cobra"
 	"os"
+
+	//"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
 	"serv-client-cli/helper"
 	"strconv"
 )
@@ -37,14 +40,117 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("hostname: " + args[0])
 		helper.StatsFromHostname(args[0])
-		fmt.Println(helper.CpuUser)
-		displayStats()
+		//displayStats()
+		ui()
 	},
 }
 
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
+func ui() {
+
+	theme := tui.NewTheme()
+	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+
+	memUsedUi := tui.NewTextEdit()
+	memUsedUi.SetText(strconv.Itoa(helper.MemUsed))
+	memUsedBox := tui.NewVBox(memUsedUi)
+	memUsedBox.SetTitle("Memory Used")
+	memUsedBox.SetBorder(true)
+	memUsedBox.SetSizePolicy(tui.Minimum, tui.Minimum)
+
+	memTotalUi := tui.NewTextEdit()
+	memTotalUi.SetText(strconv.Itoa(helper.MemTotal))
+	memTotalBox := tui.NewVBox(memTotalUi)
+	memTotalBox.SetTitle("Memory Total")
+	memTotalBox.SetBorder(true)
+	memTotalBox.SetSizePolicy(tui.Minimum, tui.Minimum)
+
+	memCachedUi := tui.NewTextEdit()
+	memCachedUi.SetText(strconv.Itoa(helper.MemCached))
+	memCachedBox := tui.NewVBox(memCachedUi)
+	memCachedBox.SetTitle("Memory Cached")
+	memCachedBox.SetBorder(true)
+	memCachedBox.SetSizePolicy(tui.Minimum, tui.Minimum)
+
+	memFreeUi := tui.NewTextEdit()
+	memFreeUi.SetText(strconv.Itoa(helper.MemFree))
+	memFreeBox := tui.NewVBox(memFreeUi)
+	memFreeBox.SetTitle("Memory Free")
+	memFreeBox.SetBorder(true)
+	memFreeBox.SetSizePolicy(tui.Minimum, tui.Minimum)
+
+	memoryBox := tui.NewHBox(memUsedBox,memTotalBox,memCachedBox,memFreeBox)
+	memoryBox.SetTitle("Memory")
+	memoryBox.SetBorder(true)
+	//memoryBox.SetSizePolicy(tui.Preferred, tui.Minimum)
+
+	cpuSystemUi := tui.NewTextEdit()
+	cpuSystemUi.SetText(FloatToString(helper.CpuSystem))
+	cpuSystemBox := tui.NewVBox(cpuSystemUi)
+	cpuSystemBox.SetTitle("Cpu System")
+	cpuSystemBox.SetBorder(true)
+
+	cpuUserUi := tui.NewTextEdit()
+	cpuUserUi.SetText(FloatToString(helper.CpuUser))
+	cpuUserBox := tui.NewVBox(cpuUserUi)
+	cpuUserBox.SetTitle("Cpu User")
+	cpuUserBox.SetBorder(true)
+
+	cpuIdleUi := tui.NewTextEdit()
+	cpuIdleUi.SetText(FloatToString(helper.CpuIdle))
+	cpuIdleBox := tui.NewVBox(cpuIdleUi)
+	cpuIdleBox.SetTitle("Cpu Idle")
+	cpuIdleBox.SetBorder(true)
+
+	netRxUi := tui.NewTextEdit()
+	netRxUi.SetText(strconv.Itoa(helper.RxBytes))
+	netRxBox := tui.NewVBox(netRxUi)
+	netRxBox.SetTitle("Rx Bytes")
+	netRxBox.SetBorder(true)
+
+	netTxUi := tui.NewTextEdit()
+	netTxUi.SetText(strconv.Itoa(helper.TxBytes))
+	netTxBox := tui.NewVBox(netTxUi)
+	netTxBox.SetTitle("Tx Bytes")
+	netTxBox.SetBorder(true)
+
+	uptimeUi := tui.NewTextEdit()
+	uptimeUi.SetText(helper.Uptime)
+	uptimeBox := tui.NewVBox(uptimeUi)
+	uptimeBox.SetTitle("Uptime")
+	uptimeBox.SetBorder(true)
+
+	timeUi := tui.NewTextEdit()
+	timeUi.SetText(helper.Time)
+	timeBox := tui.NewVBox(timeUi)
+	timeBox.SetTitle("Last Updated")
+	timeBox.SetBorder(true)
+
+	cpuBox := tui.NewHBox(cpuUserBox,cpuSystemBox,cpuIdleBox)
+	cpuBox.SetTitle("CPU")
+	cpuBox.SetBorder(true)
+	//cpuBox.SetSizePolicy(tui.Expanding, tui.Expanding)
+
+	netBox := tui.NewHBox(netRxBox, netTxBox)
+	netBox.SetTitle("Network")
+	netBox.SetBorder(true)
+
+	root := tui.NewHBox(memoryBox,cpuBox,netBox,uptimeBox,timeBox)
+
+	ui, err := tui.New(root)
+	if err != nil {
+		panic(err)
+	}
+	ui.SetKeybinding("Esc", func() { ui.Quit() })
+
+	if err := ui.Run(); err != nil {
+		panic(err)
+	}
+
 }
 
 func displayStats() {
