@@ -17,9 +17,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/marcusolsson/tui-go"
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 	"github.com/olekukonko/tablewriter"
+	"log"
 	"os"
+	"time"
 
 	//"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -39,9 +42,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("hostname: " + args[0])
-		helper.StatsFromHostname(args[0])
+		//ui(args[0])
 		//displayStats()
-		ui()
+		termuiRun(args[0])
 	},
 }
 
@@ -50,107 +53,84 @@ func FloatToString(input_num float64) string {
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
 }
 
-func ui() {
+type MemWidget struct {
+	*widgets.BarChart
+}
 
-	theme := tui.NewTheme()
-	theme.SetStyle("box.focused.border", tui.Style{Fg: tui.ColorYellow, Bg: tui.ColorDefault})
+type MemoryInfo struct {
+	Total int
+	Cached int
+	Free int
+	Used int
+}
 
-	memUsedUi := tui.NewTextEdit()
-	memUsedUi.SetText(strconv.Itoa(helper.MemUsed))
-	memUsedBox := tui.NewVBox(memUsedUi)
-	memUsedBox.SetTitle("Memory Used")
-	memUsedBox.SetBorder(true)
-	memUsedBox.SetSizePolicy(tui.Minimum, tui.Minimum)
+func (self *MemWidget) renderMemInfo(info MemoryInfo) {
+	self.Data = append(self.Data)
+}
 
-	memTotalUi := tui.NewTextEdit()
-	memTotalUi.SetText(strconv.Itoa(helper.MemTotal))
-	memTotalBox := tui.NewVBox(memTotalUi)
-	memTotalBox.SetTitle("Memory Total")
-	memTotalBox.SetBorder(true)
-	memTotalBox.SetSizePolicy(tui.Minimum, tui.Minimum)
-
-	memCachedUi := tui.NewTextEdit()
-	memCachedUi.SetText(strconv.Itoa(helper.MemCached))
-	memCachedBox := tui.NewVBox(memCachedUi)
-	memCachedBox.SetTitle("Memory Cached")
-	memCachedBox.SetBorder(true)
-	memCachedBox.SetSizePolicy(tui.Minimum, tui.Minimum)
-
-	memFreeUi := tui.NewTextEdit()
-	memFreeUi.SetText(strconv.Itoa(helper.MemFree))
-	memFreeBox := tui.NewVBox(memFreeUi)
-	memFreeBox.SetTitle("Memory Free")
-	memFreeBox.SetBorder(true)
-	memFreeBox.SetSizePolicy(tui.Minimum, tui.Minimum)
-
-	memoryBox := tui.NewHBox(memUsedBox,memTotalBox,memCachedBox,memFreeBox)
-	memoryBox.SetTitle("Memory")
-	memoryBox.SetBorder(true)
-	//memoryBox.SetSizePolicy(tui.Preferred, tui.Minimum)
-
-	cpuSystemUi := tui.NewTextEdit()
-	cpuSystemUi.SetText(FloatToString(helper.CpuSystem))
-	cpuSystemBox := tui.NewVBox(cpuSystemUi)
-	cpuSystemBox.SetTitle("Cpu System")
-	cpuSystemBox.SetBorder(true)
-
-	cpuUserUi := tui.NewTextEdit()
-	cpuUserUi.SetText(FloatToString(helper.CpuUser))
-	cpuUserBox := tui.NewVBox(cpuUserUi)
-	cpuUserBox.SetTitle("Cpu User")
-	cpuUserBox.SetBorder(true)
-
-	cpuIdleUi := tui.NewTextEdit()
-	cpuIdleUi.SetText(FloatToString(helper.CpuIdle))
-	cpuIdleBox := tui.NewVBox(cpuIdleUi)
-	cpuIdleBox.SetTitle("Cpu Idle")
-	cpuIdleBox.SetBorder(true)
-
-	netRxUi := tui.NewTextEdit()
-	netRxUi.SetText(strconv.Itoa(helper.RxBytes))
-	netRxBox := tui.NewVBox(netRxUi)
-	netRxBox.SetTitle("Rx Bytes")
-	netRxBox.SetBorder(true)
-
-	netTxUi := tui.NewTextEdit()
-	netTxUi.SetText(strconv.Itoa(helper.TxBytes))
-	netTxBox := tui.NewVBox(netTxUi)
-	netTxBox.SetTitle("Tx Bytes")
-	netTxBox.SetBorder(true)
-
-	uptimeUi := tui.NewTextEdit()
-	uptimeUi.SetText(helper.Uptime)
-	uptimeBox := tui.NewVBox(uptimeUi)
-	uptimeBox.SetTitle("Uptime")
-	uptimeBox.SetBorder(true)
-
-	timeUi := tui.NewTextEdit()
-	timeUi.SetText(helper.Time)
-	timeBox := tui.NewVBox(timeUi)
-	timeBox.SetTitle("Last Updated")
-	timeBox.SetBorder(true)
-
-	cpuBox := tui.NewHBox(cpuUserBox,cpuSystemBox,cpuIdleBox)
-	cpuBox.SetTitle("CPU")
-	cpuBox.SetBorder(true)
-	//cpuBox.SetSizePolicy(tui.Expanding, tui.Expanding)
-
-	netBox := tui.NewHBox(netRxBox, netTxBox)
-	netBox.SetTitle("Network")
-	netBox.SetBorder(true)
-
-	root := tui.NewHBox(memoryBox,cpuBox,netBox,uptimeBox,timeBox)
-
-	ui, err := tui.New(root)
-	if err != nil {
-		panic(err)
+func termuiRun(args string) {
+	if err := ui.Init(); err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
 	}
-	ui.SetKeybinding("Esc", func() { ui.Quit() })
+	defer ui.Close()
 
-	if err := ui.Run(); err != nil {
-		panic(err)
+	uiEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second * 6).C //ticker of 6 seconds
+	for {
+		select {
+			case e := <-uiEvents:
+				switch e.ID {
+				case "q", "<C-c>":
+					return
+				}
+		case <- ticker: //run following things every 6 seconds to update stats and widgets
+			helper.StatsFromHostname(args)
+			updateCpuData()
+			drawFunction()
+		}
 	}
+}
 
+var cpuUsageArray = make([][]float64, 2)
+//appends new data and deletes oldest datapoint
+func updateCpuData() {
+	if len(cpuUsageArray) == 0 {
+		cpuUsageArray[0] = []float64{}
+		cpuUsageArray[1] = []float64{}
+	}
+	//delete newest datapoint if there are more than 10 datapoints already
+	/*
+	if len(cpuUsageArray) > 10 {
+		cpuUsageArray = append(cpuUsageArray[:0], cpuUsageArray[1:]...)
+	} */
+	//append new datapoint
+	cpuUsageArray[0] = append(cpuUsageArray[0], helper.CpuSystem)
+	cpuUsageArray[1] = append(cpuUsageArray[1], helper.CpuUser)
+	//fmt.Println(cpuUsageArray)
+}
+
+//draw the UI elements
+func drawFunction() {
+	bc := widgets.NewBarChart()
+	bc.Data = []float64{float64(helper.MemFree), float64(helper.MemCached), float64(helper.MemTotal), float64(helper.MemUsed)}
+	bc.Labels = []string{"Free", "Cached", "Total", "Used"}
+	bc.Title = "Memory (MB)"
+	bc.SetRect(0, 0, 40, 8)
+	bc.BarWidth = 8
+	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
+	bc.LabelStyles = []ui.Style{ui.NewStyle(ui.ColorBlue)}
+	bc.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlack)}
+
+	line := widgets.NewPlot()
+	line.Data = cpuUsageArray
+	line.Marker = widgets.MarkerDot
+	line.DotMarkerRune = '+'
+	line.AxesColor = ui.ColorWhite
+	line.LineColors[0] = ui.ColorYellow
+	line.DrawDirection = widgets.DrawLeft
+	line.Title = "CPU (%)"
+	line.SetRect(0,0,50,10)
+	ui.Render(bc,line)
 }
 
 func displayStats() {

@@ -1,10 +1,9 @@
 package helper
 
-import(
+import (
 	"bufio"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"fmt"
 	"log"
 	"os"
 )
@@ -55,7 +54,8 @@ func connect() (*sql.DB) {
 	if err != nil {
 		panic(err)
 	} else {
-		fmt.Println("DB connection working")
+		//commented for debugging
+		//fmt.Println("DB connection working")
 	}
 	 return db
 }
