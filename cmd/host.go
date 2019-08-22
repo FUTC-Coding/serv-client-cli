@@ -20,6 +20,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cast"
 	"log"
 	"os"
 	"time"
@@ -86,6 +87,7 @@ func termuiRun(args string) {
 		case <- ticker: //run following things every 6 seconds to update stats and widgets
 			helper.StatsFromHostname(args)
 			updateCpuData()
+			updateNetData()
 			drawFunction()
 		}
 	}
@@ -98,39 +100,73 @@ func updateCpuData() {
 		cpuUsageArray[0] = []float64{}
 		cpuUsageArray[1] = []float64{}
 	}
-	//delete newest datapoint if there are more than 10 datapoints already
-	/*
-	if len(cpuUsageArray) > 10 {
-		cpuUsageArray = append(cpuUsageArray[:0], cpuUsageArray[1:]...)
-	} */
+	//delete newest datapoint if there are more than 40 datapoints already
+	if len(cpuUsageArray) > 40 {
+		cpuUsageArray[0] = append(cpuUsageArray[0][:0], cpuUsageArray[0][1:]...)
+	}
 	//append new datapoint
 	cpuUsageArray[0] = append(cpuUsageArray[0], helper.CpuSystem)
 	cpuUsageArray[1] = append(cpuUsageArray[1], helper.CpuUser)
 	//fmt.Println(cpuUsageArray)
 }
 
+var rxData = make([]float64, 1)
+var txData = make([]float64, 1)
+func updateNetData() {
+	if len(rxData) > 40 {
+		rxData = append(rxData[:0], rxData[1:]...)
+		txData = append(txData[:0], rxData[1:]...)
+	}
+	//append new datapoint
+	rxData = append(rxData, cast.ToFloat64(helper.RxBytes))
+	txData = append(txData, cast.ToFloat64(helper.TxBytes))
+}
+
 //draw the UI elements
 func drawFunction() {
+	//draw memory barchart
 	bc := widgets.NewBarChart()
 	bc.Data = []float64{float64(helper.MemFree), float64(helper.MemCached), float64(helper.MemTotal), float64(helper.MemUsed)}
 	bc.Labels = []string{"Free", "Cached", "Total", "Used"}
 	bc.Title = "Memory (MB)"
-	bc.SetRect(0, 0, 40, 8)
-	bc.BarWidth = 8
+	bc.SetRect(0, 0, 50, 10)
+	bc.BarWidth = 10
 	bc.BarColors = []ui.Color{ui.ColorRed, ui.ColorGreen}
 	bc.LabelStyles = []ui.Style{ui.NewStyle(ui.ColorBlue)}
 	bc.NumStyles = []ui.Style{ui.NewStyle(ui.ColorBlack)}
 
-	line := widgets.NewPlot()
-	line.Data = cpuUsageArray
-	line.Marker = widgets.MarkerDot
-	line.DotMarkerRune = '+'
-	line.AxesColor = ui.ColorWhite
-	line.LineColors[0] = ui.ColorYellow
-	line.DrawDirection = widgets.DrawLeft
-	line.Title = "CPU (%)"
-	line.SetRect(0,0,50,10)
-	ui.Render(bc,line)
+	//draw CPU usage plot
+	plot := widgets.NewPlot()
+	plot.Marker = widgets.MarkerDot
+	plot.Data = cpuUsageArray
+	plot.AxesColor = ui.ColorWhite
+	plot.LineColors[0] = ui.ColorYellow
+	plot.SetRect(50,0,100,10)
+	//plot.DrawDirection = widgets.DrawLeft
+	plot.Title = "CPU (%)"
+
+	//draw network usage sparkline
+	rxSpark := widgets.NewSparkline()
+	rxSpark.Data = rxData
+	rxSpark.LineColor = ui.ColorGreen
+
+	txSpark := widgets.NewSparkline()
+	txSpark.Data = txData
+	txSpark.LineColor = ui.ColorBlue
+
+	sparkGroup := widgets.NewSparklineGroup(rxSpark,txSpark)
+	sparkGroup.Title = "Net (Bytes)"
+	sparkGroup.SetRect(0, 10,50,20)
+
+	table := widgets.NewTable()
+	table.Rows = [][]string {
+		{"uptime", "time of data"},
+		{helper.Uptime, helper.Time},
+	}
+	table.TextStyle = ui.NewStyle(ui.ColorWhite)
+	table.SetRect(50,10,100,15)
+
+	ui.Render(bc, plot, sparkGroup, table)
 }
 
 func displayStats() {
