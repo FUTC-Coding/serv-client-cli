@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	CpuUser float64
-	CpuSystem float64
-	CpuIdle float64
+	CpuPerc float64
 	MemTotal int
 	MemUsed int
 	MemCached int
 	MemFree int
 	RxBytes int
 	TxBytes int
+	DiskUsed int
+	DiskFree int
 	Uptime string
 	Time string
 )
@@ -31,7 +31,7 @@ func StatsFromHostname(hostname string) {
 	defer row.Close()
 
 	for row.Next() {
-		err = row.Scan(&CpuUser, &CpuSystem, &CpuIdle, &MemTotal, &MemUsed, &MemCached, &MemFree, &RxBytes, &TxBytes, &Uptime, &Time)
+		err = row.Scan(&CpuPerc, &MemTotal, &MemUsed, &MemCached, &MemFree, &RxBytes, &TxBytes, &DiskUsed, &DiskFree, &Uptime, &Time)
 		if err != nil {
 			log.Fatal(err)
 		}

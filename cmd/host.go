@@ -93,20 +93,19 @@ func termuiRun(args string) {
 	}
 }
 
-var cpuUsageArray = make([][]float64, 2)
+var cpuUsageArray = make([][]float64, 1)
 //appends new data and deletes oldest datapoint
 func updateCpuData() {
 	if len(cpuUsageArray) == 0 {
 		cpuUsageArray[0] = []float64{}
-		cpuUsageArray[1] = []float64{}
 	}
 	//delete newest datapoint if there are more than 40 datapoints already
 	if len(cpuUsageArray) > 40 {
+		//todo deleting of old datapoint doesnt work
 		cpuUsageArray[0] = append(cpuUsageArray[0][:0], cpuUsageArray[0][1:]...)
 	}
 	//append new datapoint
-	cpuUsageArray[0] = append(cpuUsageArray[0], helper.CpuSystem)
-	cpuUsageArray[1] = append(cpuUsageArray[1], helper.CpuUser)
+	cpuUsageArray[0] = append(cpuUsageArray[0], helper.CpuPerc)
 	//fmt.Println(cpuUsageArray)
 }
 
@@ -166,7 +165,16 @@ func drawFunction() {
 	table.TextStyle = ui.NewStyle(ui.ColorWhite)
 	table.SetRect(50,10,100,15)
 
-	ui.Render(bc, plot, sparkGroup, table)
+	pie := widgets.NewPieChart()
+	pie.Title = "Disk Usage(MB)"
+	pie.SetRect(50,15,71,25)
+	pie.Data = []float64{float64(helper.DiskUsed), float64(helper.DiskFree)}
+	//pie.AngleOffset = -.9 * math.Pi
+	pie.LabelFormatter = func(i int, v float64) string {
+		return fmt.Sprintf("%0.2f", v)
+	}
+
+	ui.Render(bc, plot, sparkGroup, table, pie)
 }
 
 func displayStats() {
@@ -175,9 +183,7 @@ func displayStats() {
 	table.SetBorder(false)
 	//append a row with the data from the last call of StatsFromHostname()
 	table.Append([]string{
-		FloatToString(helper.CpuUser),
-		FloatToString(helper.CpuSystem),
-		FloatToString(helper.CpuIdle),
+		FloatToString(helper.CpuPerc),
 		strconv.Itoa(helper.MemTotal),
 		strconv.Itoa(helper.MemUsed),
 		strconv.Itoa(helper.MemCached),
