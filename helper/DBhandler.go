@@ -18,6 +18,8 @@ var (
 	TxBytes int
 	DiskUsed int
 	DiskFree int
+	DiskWrite int
+	DiskRead int
 	Uptime string
 	Time string
 )
@@ -31,7 +33,7 @@ func StatsFromHostname(hostname string) {
 	defer row.Close()
 
 	for row.Next() {
-		err = row.Scan(&CpuPerc, &MemTotal, &MemUsed, &MemCached, &MemFree, &RxBytes, &TxBytes, &DiskUsed, &DiskFree, &Uptime, &Time)
+		err = row.Scan(&CpuPerc, &MemTotal, &MemUsed, &MemCached, &MemFree, &RxBytes, &TxBytes, &DiskUsed, &DiskFree, &DiskRead, &DiskWrite, &Uptime, &Time)
 		if err != nil {
 			log.Fatal(err)
 		}
