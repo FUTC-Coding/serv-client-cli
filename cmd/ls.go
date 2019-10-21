@@ -16,7 +16,9 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"github.com/olekukonko/tablewriter"
+	"os"
+	"serv-client-cli/helper"
 
 	"github.com/spf13/cobra"
 )
@@ -32,8 +34,27 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("ls called")
+		listTables(helper.ListOfTables())
 	},
+}
+
+func listTables(tables []string) {
+	var data [][]string
+
+	for i := 0 ; i < len(tables); i++ {
+		if tables[i] != "0a7e8382f8ee" && tables[i] != "312234b90b22" {
+			s := []string{tables[i]}
+			data = append(data, s)
+		}
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Servers"})
+
+	for _, v := range data {
+		table.Append(v)
+	}
+	table.Render()
 }
 
 func init() {
