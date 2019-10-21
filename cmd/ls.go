@@ -42,10 +42,8 @@ func listTables(tables []string) {
 	var data [][]string
 
 	for i := 0 ; i < len(tables); i++ {
-		if tables[i] != "0a7e8382f8ee" && tables[i] != "312234b90b22" {
-			s := []string{tables[i]}
-			data = append(data, s)
-		}
+		s := []string{tables[i]}
+		data = append(data, s)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
