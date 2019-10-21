@@ -22,6 +22,7 @@ var (
 	DiskRead int
 	Uptime string
 	Time string
+	Tables_in_stats string
 )
 
 func StatsFromHostname(hostname string) {
@@ -43,6 +44,32 @@ func StatsFromHostname(hostname string) {
 	if err != nil {
 		log.Fatal()
 	}
+}
+
+func ListOfTables() []string {
+	var tables []string
+
+	db := connect()
+	rows, err := db.Query("SHOW TABLES FROM stats")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&Tables_in_stats)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tables = append(tables, Tables_in_stats)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Fatal()
+	}
+
+	return tables
 }
 
 func connect() (*sql.DB) {
