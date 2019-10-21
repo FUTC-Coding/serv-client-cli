@@ -17,10 +17,9 @@ package cmd
 
 import (
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
 	"os"
 	"serv-client-cli/helper"
-
-	"github.com/spf13/cobra"
 )
 
 // lsCmd represents the ls command
@@ -42,12 +41,16 @@ func listTables(tables []string) {
 	var data [][]string
 
 	for i := 0 ; i < len(tables); i++ {
-		s := []string{tables[i]}
+		helper.StatsFromHostname(tables[i])
+		memPerc := (float64(helper.MemUsed)/float64(helper.MemTotal))*100
+		storagePerc := (float64(helper.DiskUsed)/(float64(helper.DiskFree)+float64(helper.DiskUsed)))*100 //calculate percentage
+		s := []string{tables[i], FloatToString(helper.CpuPerc), FloatToString(memPerc), FloatToString(storagePerc), helper.Uptime, helper.Time}
 		data = append(data, s)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Servers"})
+	table.SetRowLine(true)
+	table.SetHeader([]string{"Server", "Cpu %", "Mem %", "Storage %", "Uptime", "Time Updated"})
 
 	for _, v := range data {
 		table.Append(v)
