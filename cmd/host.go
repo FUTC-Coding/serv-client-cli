@@ -49,6 +49,23 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var cmdCpu = &cobra.Command{
+	Use:   "cpu",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("hostname: " + args[0])
+		//ui(args[0])
+		//displayStats()
+		termuiRunCpu(args[0])
+	},
+}
+
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 6, 64)
@@ -89,6 +106,29 @@ func termuiRun(args string) {
 			updateCpuData()
 			updateNetData()
 			drawFunction()
+		}
+	}
+}
+
+func termuiRunCpu(args string) {
+	if err := ui.Init(); err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+
+	uiEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second * 6).C //ticker of 6 seconds
+	for {
+		select {
+		case e := <-uiEvents:
+			switch e.ID {
+			case "q", "<C-c>":
+				return
+			}
+		case <- ticker: //run following things every 6 seconds to update stats and widgets
+			helper.StatsFromHostname(args)
+			updateCpuData() //todo add another stats from hostname which only gets cpu data to save bandwidth
+			drawCpu()
 		}
 	}
 }
@@ -177,6 +217,19 @@ func drawFunction() {
 	ui.Render(bc, plot, sparkGroup, table, pie)
 }
 
+func drawCpu() {
+	//draw CPU usage plot
+	plot := widgets.NewPlot()
+	plot.Marker = widgets.MarkerDot
+	plot.Data = cpuUsageArray
+	plot.AxesColor = ui.ColorWhite
+	plot.LineColors[0] = ui.ColorYellow
+	plot.SetRect(0,0,100,20)
+	//plot.DrawDirection = widgets.DrawLeft
+	plot.Title = "CPU (%)"
+	ui.Render(plot)
+}
+
 func displayStats() {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"CpuUser","CpuSystem", "CpuIdle", "MemTotal", "MemUsed", "MemCached", "MemFree", "RxBytes", "TxBytes", "Uptime", "Time"})
@@ -198,6 +251,7 @@ func displayStats() {
 
 func init() {
 	rootCmd.AddCommand(hostCmd)
+	hostCmd.AddCommand(cmdCpu)
 
 	// Here you will define your flags and configuration settings.
 
